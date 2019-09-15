@@ -1,0 +1,25 @@
+{
+  "name": "attgame",
+  "version": "1.0.0",
+  "description": "testing an idea for a game mechanics using attention to determin success",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel ./src/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/horup/attgame.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/horup/attgame/issues"
+  },
+  "homepage": "https://github.com/horup/attgame#readme",
+  "dependencies": {
+    "parcel-bundler": "^1.12.3",
+    "phaser": "^3.19.0",
+    "typescript": "^3.6.3"
+  }
+}
