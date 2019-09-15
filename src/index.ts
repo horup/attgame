@@ -1,5 +1,4 @@
 import * as Phaser from 'phaser';
-import { State } from './state';
 declare var require;
 
 export class Unit extends Phaser.GameObjects.Sprite
@@ -9,7 +8,6 @@ export class Unit extends Phaser.GameObjects.Sprite
 
 export class AttScene extends Phaser.Scene
 {
-    state:State;
     constructor(config:any)
     {
         super(config);
@@ -52,10 +50,6 @@ export class AttScene extends Phaser.Scene
     create()
     {
         this.game.canvas.oncontextmenu = (e)=>e.preventDefault();
-        
-        this.state = new State();
-        let state = this.state;
-        state.initDemo();
 
         this.tilemap = this.make.tilemap({tileHeight:16, tileWidth:16, width:256, height:256});
         this.tilemap.addTilesetImage('tiles');
