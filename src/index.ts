@@ -1,9 +1,44 @@
 import * as Phaser from 'phaser';
+import Vector2 = Phaser.Math.Vector2;
+
 declare var require;
 
 export class Unit extends Phaser.GameObjects.Sprite
 {
     player:number = 0;
+    fov:Phaser.Geom.Triangle = new Phaser.Geom.Triangle();
+    ambient:Phaser.Geom.Circle = new Phaser.Geom.Circle();
+    
+    moveRadius = 4 * 16;
+    shootRadius = 10 * 16;
+    ambientRadius = 2 * 16;
+
+
+    moveTo(p:Vector2)
+    {
+        this.ambient.setTo(this.x, this.y, this.ambientRadius);
+    }
+
+    lookAt(p:Vector2)
+    {
+        let front = new Phaser.Geom.Triangle();
+        let me = new Vector2(this);
+        let v = p.clone().subtract(me);
+        this.rotation = v.angle();
+        let l = v.length();
+        let l2 = 300-l;
+        let min = 0;
+        if (l2 < min)
+            l2 = min;
+        v.normalize();
+
+
+        let p1 = v.clone().set(-v.y, v.x).scale(l2).add(p);
+        let p2 = v.clone().set(v.y, -v.x).scale(l2).add(p);
+
+
+        this.fov.setTo(me.x, me.y, p1.x, p1.y, p2.x, p2.y);
+    }
 }
 
 export class AttScene extends Phaser.Scene
@@ -28,8 +63,10 @@ export class AttScene extends Phaser.Scene
     last = {x:0, y:0};
 
     units:Unit[] = [];
-    selectedUnit:Phaser.GameObjects.Sprite;
+    selectedUnit:Unit;
     selectionBox:Phaser.GameObjects.Image;
+    fow:Phaser.GameObjects.Graphics;
+    graphics:Phaser.GameObjects.Graphics;
 
     makeUnit(x:number, y:number, player = 0)
     {
@@ -45,6 +82,24 @@ export class AttScene extends Phaser.Scene
     selectUnit(u:Unit)
     {
         this.selectedUnit = u;
+        this.fow.clear();
+        this.graphics.clear();
+        if (u == null)
+            return;
+
+        this.fow.lineStyle(1, 0);
+        this.fow.strokeCircle(u.x,u.y, 12);
+        this.fow.fillStyle(0xFFFFFF);
+        this.fow.fillCircle(u.x, u.y, u.ambientRadius);
+        this.fow.fillTriangleShape(u.fov);
+
+        this.fow.alpha = 0.5;
+        
+       /* this.graphics.fillStyle(0xFFFFFF);
+        this.graphics.lineStyle(1, 0x0000FF, 0.5);
+        this.graphics.strokeCircle(u.x, u.y, u.moveRadius);
+        this.graphics.lineStyle(1, 0xFF0000, 0.5);
+        this.graphics.strokeCircle(u.x, u.y, u.shootRadius);*/
     }
 
     create()
@@ -57,9 +112,8 @@ export class AttScene extends Phaser.Scene
         this.tilemap.addTilesetImage('overlay');
         this.tilemap.createBlankDynamicLayer("ground", 'tiles').setInteractive().on('pointerdown', (e:PointerEvent)=>
         {
-            console.log("test");
             if (e.button == 0)
-                this.selectedUnit = null;
+                this.selectUnit(null);
             else if (e.button == 2)
             {
                 if (this.selectedUnit != null)
@@ -89,6 +143,9 @@ export class AttScene extends Phaser.Scene
 
 
         this.selectionBox = this.make.image({key:'overlay', x:16, y:16, frame:2});
+
+        this.fow = this.add.graphics({});
+        this.graphics = this.add.graphics({});
     }
 
 
@@ -99,7 +156,11 @@ export class AttScene extends Phaser.Scene
             u.setFrame(u.player);
         }
         if (this.selectedUnit != null)
-            this.selectionBox.setVisible(true).setPosition(this.selectedUnit.x, this.selectedUnit.y);
+        {
+            let mp = new Phaser.Math.Vector2(this.input.activePointer.worldX, this.input.activePointer.worldY);
+            this.selectedUnit.lookAt(mp);
+            this.selectUnit(this.selectedUnit);
+        }
         else
             this.selectionBox.setVisible(false);
                 /*   let state = this.state;
