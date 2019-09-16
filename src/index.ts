@@ -3,6 +3,13 @@ import Vector2 = Phaser.Math.Vector2;
 
 declare var require;
 
+export interface Order
+{
+    moveTo:{x:number, y:number};
+    facing:number;
+    distance:number;
+}
+
 export class Unit extends Phaser.GameObjects.Sprite
 {
     player:number = 0;
@@ -12,6 +19,8 @@ export class Unit extends Phaser.GameObjects.Sprite
     moveRadius = 4 * 16;
     shootRadius = 10 * 16;
     ambientRadius = 2 * 16;
+
+    order:Order;
 
 
     moveTo(x:number, y:number)
@@ -123,7 +132,12 @@ export class AttScene extends Phaser.Scene
             {
                 if (this.selectedUnit != null)
                 {
-                    this.selectedUnit.moveTo(e.x, e.y);
+                    this.selectedUnit.order = {
+                        distance:1,
+                        facing:0,
+                        moveTo:{x:e.x, y:e.y}
+                    }
+                    //this.selectedUnit.moveTo(e.x, e.y);
                 }
             }
         })
@@ -165,14 +179,41 @@ export class AttScene extends Phaser.Scene
         }
 
         let m = this.fow.createGeometryMask();
-        this.cameras.main.setMask(m);
+      //  this.cameras.main.setMask(m);
 
         
 
         if (this.selectedUnit != null)
         {
+            let u = this.selectedUnit;
             this.overlay.lineStyle(1, 0xFFFFFF);
-            this.overlay.strokeCircle(this.selectedUnit.x, this.selectedUnit.y, 16)
+            this.overlay.strokeCircle(this.selectedUnit.x, this.selectedUnit.y, 16);
+
+            if (u.order != null)
+            {
+                
+                if (this.input.activePointer.buttons == 2)
+                {
+                    let v = new Vector2(u.order.moveTo);
+                    let p = new Vector2(this.input.activePointer.worldX, this.input.activePointer.worldY);
+                    p.subtract(v);
+                    let a = p.angle();
+                    u.order.facing = a;
+                    u.order.distance = p.length();
+                    
+                }
+                {
+                    this.overlay.lineBetween(u.x, u.y, u.order.moveTo.x, u.order.moveTo.y);
+                    let v = new Vector2(Math.cos(u.order.facing), Math.sin(u.order.facing));
+                    v.scale(u.order.distance);
+                    v.add(new Vector2(u.order.moveTo.x, u.order.moveTo.y));
+
+                    this.overlay.lineStyle(1, 0xFF0000);
+
+                    this.overlay.lineBetween(u.order.moveTo.x, u.order.moveTo.y, v.x, v.y);
+                }
+            }
+
             //let mp = new Phaser.Math.Vector2(this.input.activePointer.worldX, this.input.activePointer.worldY);
             //this.selectedUnit.lookAt(mp);
 
