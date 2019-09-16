@@ -30,6 +30,26 @@ export class Unit extends Phaser.GameObjects.Sprite
         this.ambient.setTo(x, y, this.ambientRadius);
     }
 
+    calculateFov(from:Vector2, angle:number, distance:number)
+    {
+        let minDistance = 128;
+        if (distance < minDistance)
+            distance = minDistance;
+        let l = distance;
+        let l2 = 300 - l;
+        let min = 0;
+        if (l2 < min)
+            l2 = min;
+        let p = from.clone();
+        let v = new Vector2(Math.cos(angle), Math.sin(angle));
+        let to = v.clone().scale(distance).add(from);
+
+        let p1 = v.clone().set(-v.y, v.x).scale(l2).add(to);
+        let p2 = v.clone().set(v.y, -v.x).scale(l2).add(to);
+        let tri = new Phaser.Geom.Triangle(p.x, p.y, p1.x, p1.y, p2.x, p2.y);
+        return tri;
+    }
+
     lookAt(p:Vector2)
     {
         let front = new Phaser.Geom.Triangle();
@@ -210,7 +230,10 @@ export class AttScene extends Phaser.Scene
 
                     this.overlay.lineStyle(1, 0xFF0000);
 
-                    this.overlay.lineBetween(u.order.moveTo.x, u.order.moveTo.y, v.x, v.y);
+                    let tri = u.calculateFov(new Vector2(u.order.moveTo), u.order.facing, u.order.distance);
+                    this.overlay.strokeTriangleShape(tri);
+
+                    //this.overlay.lineBetween(u.order.moveTo.x, u.order.moveTo.y, v.x, v.y);
                 }
             }
 
