@@ -18,7 +18,6 @@ export class Unit extends Phaser.GameObjects.Sprite
     
     moveRadius = 4 * 16;
     shootRadius = 10 * 16;
-    ambientRadius = 2 * 16;
 
     order:Order;
 
@@ -31,7 +30,7 @@ export class Unit extends Phaser.GameObjects.Sprite
         this.y = y;
         this.focusDistance = focusDistance;
         this.rotation = rotation;
-        this.ambient.setTo(x, y, this.ambientRadius);
+        this.ambient.setTo(x, y, 16);
         this.fov = this.calculateFov(new Vector2(x, y), this.rotation, this.focusDistance);
     }
 
@@ -79,6 +78,7 @@ export class Unit extends Phaser.GameObjects.Sprite
 
 export class AttScene extends Phaser.Scene
 {
+    currentPlayer = 0;
     constructor(config:any)
     {
         super(config);
@@ -120,25 +120,6 @@ export class AttScene extends Phaser.Scene
     selectUnit(u:Unit)
     {
         this.selectedUnit = u;
-       /* this.selectedUnit = u;
-        this.fow.clear();
-        this.graphics.clear();
-        if (u == null)
-            return;*/
-
-       // this.fow.lineStyle(1, 0);
-     /*   this.fow.strokeCircle(u.x,u.y, 12);
-       // this.fow.fillStyle(0xFFFFFF);
-        this.fow.fillCircle(u.x, u.y, u.ambientRadius);
-        this.fow.fillTriangleShape(u.fov);
-
-        this.fow.alpha = 0.5;
-        
-        this.graphics.fillStyle(0xFFFFFF);
-        this.graphics.lineStyle(1, 0x0000FF, 0.5);
-        this.graphics.strokeCircle(u.x, u.y, u.moveRadius);
-        this.graphics.lineStyle(1, 0xFF0000, 0.5);
-        this.graphics.strokeCircle(u.x, u.y, u.shootRadius);*/
     }
 
     currentTurn:Phaser.GameObjects.Text;
@@ -158,7 +139,7 @@ export class AttScene extends Phaser.Scene
     }
 
 
-    blackness:Phaser.GameObjects.Rectangle;
+    grayness:Phaser.GameObjects.Rectangle;
     create()
     {
         this.game.canvas.oncontextmenu = (e)=>e.preventDefault();
@@ -205,8 +186,9 @@ export class AttScene extends Phaser.Scene
 
         this.fow = this.make.graphics({});
 
-        this.blackness = this.add.rectangle(0, 0, 800, 800, 0x00);
-        this.blackness.setOrigin(0, 0);
+        this.grayness = this.add.rectangle(0, 0, 800, 800, 0);
+        this.grayness.alpha = 0.5;
+        this.grayness.setOrigin(0, 0);
 
 
         this.overlay = this.add.graphics({lineStyle:{width:1}});
@@ -226,6 +208,10 @@ export class AttScene extends Phaser.Scene
             {
                 this.endturn();
             }
+            else if (e.key == "1")
+                this.currentPlayer = 0;
+            else if (e.key == "2")
+                this.currentPlayer = 1;
         });
     }
 
@@ -237,7 +223,7 @@ export class AttScene extends Phaser.Scene
         for (let u of this.units)
         {
             u.setFrame(u.player);
-            if (u.player == 0)
+            if (u.player == this.currentPlayer)
             {
                 this.fow.fillCircleShape(u.ambient);
                 this.fow.fillTriangleShape(u.fov);
@@ -245,8 +231,8 @@ export class AttScene extends Phaser.Scene
         }
 
         let m = this.fow.createGeometryMask();
-        this.blackness.setMask(m);
-        this.blackness.mask.invertAlpha = true;
+        this.grayness.setMask(m);
+        this.grayness.mask.invertAlpha = true;
 
         
 
