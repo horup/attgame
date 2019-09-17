@@ -22,12 +22,17 @@ export class Unit extends Phaser.GameObjects.Sprite
 
     order:Order;
 
+    focusDistance:number = 0;
 
-    moveTo(x:number, y:number)
+
+    moveTo(x:number, y:number, rotation:number, focusDistance:number)
     {
         this.x = x;
         this.y = y;
+        this.focusDistance = focusDistance;
+        this.rotation = rotation;
         this.ambient.setTo(x, y, this.ambientRadius);
+        this.fov = this.calculateFov(new Vector2(x, y), this.rotation, this.focusDistance);
     }
 
     calculateFov(from:Vector2, angle:number, distance:number)
@@ -107,7 +112,7 @@ export class AttScene extends Phaser.Scene
         u.setInteractive();
         this.units.push(u);
 
-        u.moveTo(x, y);
+        u.moveTo(x, y, 0, 100);
 
         return u;
     }
@@ -136,6 +141,24 @@ export class AttScene extends Phaser.Scene
         this.graphics.strokeCircle(u.x, u.y, u.shootRadius);*/
     }
 
+    currentTurn:Phaser.GameObjects.Text;
+    turn = 1;
+    endturn()
+    {
+        this.turn++;
+        this.currentTurn.text = "Turn " + this.turn;
+        for (let u of this.units)
+        {
+            if (u.order != null)
+            {
+                u.moveTo(u.order.moveTo.x, u.order.moveTo.y, u.order.facing, u.order.distance);
+                u.order = null;
+            }
+        }
+    }
+
+
+    blackness:Phaser.GameObjects.Rectangle;
     create()
     {
         this.game.canvas.oncontextmenu = (e)=>e.preventDefault();
@@ -181,7 +204,29 @@ export class AttScene extends Phaser.Scene
 
 
         this.fow = this.make.graphics({});
+
+        this.blackness = this.add.rectangle(0, 0, 800, 800, 0x00);
+        this.blackness.setOrigin(0, 0);
+
+
         this.overlay = this.add.graphics({lineStyle:{width:1}});
+
+        this.currentTurn = this.add.text(8, 8, "Turn 1", 
+        {
+            fontSize:'32px',
+            color:'red',
+            align:'center',
+            fontFamily: 'Tahoma'
+        });
+
+
+        this.input.keyboard.on('keydown', (e:KeyboardEvent)=>
+        {
+            if (e.keyCode == 32)
+            {
+                this.endturn();
+            }
+        });
     }
 
 
@@ -195,11 +240,13 @@ export class AttScene extends Phaser.Scene
             if (u.player == 0)
             {
                 this.fow.fillCircleShape(u.ambient);
+                this.fow.fillTriangleShape(u.fov);
             }
         }
 
         let m = this.fow.createGeometryMask();
-      //  this.cameras.main.setMask(m);
+        this.blackness.setMask(m);
+        this.blackness.mask.invertAlpha = true;
 
         
 
