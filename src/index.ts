@@ -230,9 +230,18 @@ export class AttScene extends Phaser.Scene
             }
         }
 
-        let m = this.fow.createGeometryMask();
-        this.grayness.setMask(m);
-        this.grayness.mask.invertAlpha = true;
+        let hide = this.fow.createGeometryMask();
+        hide.invertAlpha = true;
+        let show =  this.fow.createGeometryMask();
+        this.grayness.setMask(hide);
+
+        for (let u of this.units)
+        {
+            if (u.player != this.currentPlayer)
+            {
+                u.setMask(show);
+            }
+        }
 
         
 
