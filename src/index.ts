@@ -187,7 +187,7 @@ export class AttScene extends Phaser.Scene
         this.fow = this.make.graphics({});
 
         this.grayness = this.add.rectangle(0, 0, 800, 800, 0);
-        this.grayness.alpha = 0.5;
+        this.grayness.alpha = 0.0;
         this.grayness.setOrigin(0, 0);
 
 
@@ -220,6 +220,11 @@ export class AttScene extends Phaser.Scene
     {
         this.overlay.clear();
         this.fow.clear();
+        this.tilemap.setLayer("ground");
+        this.tilemap.forEachTile((t)=>
+        {
+            t.setAlpha(0.5);
+        });
         for (let u of this.units)
         {
             u.setFrame(u.player);
@@ -228,12 +233,26 @@ export class AttScene extends Phaser.Scene
                 this.fow.fillCircleShape(u.ambient);
                 this.fow.fillTriangleShape(u.fov);
             }
+
+            if (u.player == this.currentPlayer)
+            {
+                this.tilemap.getTilesWithinShape(u.ambient).forEach(t=>
+                {
+                    t.setAlpha(1.0);
+                });
+                this.tilemap.getTilesWithinShape(u.fov).forEach(t=>
+                {
+                    t.setAlpha(1.0);
+                });
+            }
+
+          
         }
 
         let hide = this.fow.createGeometryMask();
         hide.invertAlpha = true;
         let show =  this.fow.createGeometryMask();
-        this.grayness.setMask(hide);
+        //this.grayness.setMask(hide);
 
         for (let u of this.units)
         {
@@ -242,6 +261,11 @@ export class AttScene extends Phaser.Scene
                 u.setMask(show);
             }
         }
+
+       /* this.tilemap.forEachTile((t)=>
+        {
+            t.setAlpha(0.5);
+        });*/
 
         
 
