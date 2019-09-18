@@ -1,9 +1,18 @@
 import * as Phaser from 'phaser';
 import Vector2 = Phaser.Math.Vector2;
 import {Unit, Order} from './unit';
-import {CELLSIZE, TILESIZE} from './constants';
+import {TILESIZE} from './constants';
+import bresenham from 'bresenham';
 
 declare var require;
+/*
+var line = bresenham(1, 2, 3, 4);
+do {
+ console.log(line);
+  var point = line.next().value;
+  console.log(point);
+  // do something
+} while(point);*/
 
 
 export class AttScene extends Phaser.Scene
@@ -31,7 +40,6 @@ export class AttScene extends Phaser.Scene
     units:Unit[] = [];
     selectedUnit:Unit;
     
-    fow:Phaser.GameObjects.Graphics;
     overlay:Phaser.GameObjects.Graphics;
 
     makeUnit(x:number, y:number, player = 0)
@@ -78,6 +86,7 @@ export class AttScene extends Phaser.Scene
         this.tilemap.addTilesetImage('tiles');
         this.tilemap.addTilesetImage('units');
         this.tilemap.addTilesetImage('overlay');
+
         this.tilemap.createBlankDynamicLayer("ground", 'tiles').setInteractive().on('pointerdown', (e:PointerEvent)=>
         {
             if (e.button == 0)
@@ -91,12 +100,10 @@ export class AttScene extends Phaser.Scene
                         facing:0,
                         moveTo:{x:e.x, y:e.y}
                     }
-                    //this.selectedUnit.moveTo(e.x, e.y);
                 }
             }
         })
-        this.tilemap.createBlankDynamicLayer("unit", 'units');
-        this.tilemap.createBlankDynamicLayer("overlay", 'overlay');
+
         this.tilemap.setLayer("ground");
         let size = 32;
         for (let y = 0; y < size; y++)
@@ -113,23 +120,12 @@ export class AttScene extends Phaser.Scene
             u.on('pointerdown', (e:PointerEvent)=>e.button == 0 ? this.selectUnit(u) : undefined);
         }
 
-
-        this.fow = this.make.graphics({});
-
         this.grayness = this.add.rectangle(0, 0, 800, 800, 0);
         this.grayness.alpha = 0.0;
         this.grayness.setOrigin(0, 0);
 
 
         this.overlay = this.add.graphics({lineStyle:{width:1}});
-
-        this.currentTurn = this.add.text(8, 8, "Turn 1", 
-        {
-            fontSize:'32px',
-            color:'red',
-            align:'center',
-            fontFamily: 'Tahoma'
-        });
 
 
         this.input.keyboard.on('keydown', (e:KeyboardEvent)=>
@@ -143,59 +139,104 @@ export class AttScene extends Phaser.Scene
             else if (e.key == "2")
                 this.currentPlayer = 1;
         });
+
+        this.tilemap.createBlankDynamicLayer("blackness", 'overlay');
+        this.tilemap.createBlankDynamicLayer("fogofwar", 'overlay');
+        this.tilemap.setLayer("fogofwar");
+        for (let y = 0; y < size; y++)
+            for (let x = 0; x < size; x++)
+                this.tilemap.putTileAt(0, x, y);
+
+        this.tilemap.setLayer("blackness");
+        for (let y = 0; y < size; y++)
+            for (let x = 0; x < size; x++)
+                this.tilemap.putTileAt(0, x, y);
+
+                
+        this.currentTurn = this.add.text(8, 8, "Turn 1", 
+        {
+            fontSize:'32px',
+            color:'red',
+            align:'center',
+            fontFamily: 'Tahoma'
+        });
+
     }
 
 
     update()
     {
         this.overlay.clear();
-        this.fow.clear();
-        this.tilemap.setLayer("ground");
-        this.tilemap.forEachTile((t)=>
-        {
-            t.setAlpha(0.5);
-        });
+        this.tilemap.setLayer("fogofwar");
+        this.tilemap.forEachTile(t=>t.alpha = 0.5);
         for (let u of this.units)
         {
             u.setFrame(u.player);
             if (u.player == this.currentPlayer)
             {
-                this.fow.fillCircleShape(u.ambient);
-                this.fow.fillTriangleShape(u.fov);
+              /*  this.fow.fillCircleShape(u.ambient);
+                this.fow.fillTriangleShape(u.fov);*/
             }
 
             if (u.player == this.currentPlayer)
             {
+                this.tilemap.setLayer("fogofwar");
                 this.tilemap.getTilesWithinShape(u.ambient).forEach(t=>
                 {
-                    t.setAlpha(1.0);
+                    t.setAlpha(0.0);
                 });
-                this.tilemap.getTilesWithinShape(u.fov).forEach(t=>
+                this.tilemap.getTilesWithinShape(u.horizon).forEach(t=>
                 {
-                    t.setAlpha(1.0);
+                    let sx = u.tileX;
+                    let sy = u.tileY;
+                    let ex = t.x;
+                    let ey = t.y;
+                    let line = bresenham(sx, sy, ex, ey);
+                    this.tilemap.setLayer("fogofwar");
+                    for (let p of line)
+                    {
+                        let t = this.tilemap.getTileAt(p.x, p.y)
+                        if (t != null)
+                            t.setAlpha(0);
+                    }
+                    this.tilemap.setLayer("blackness");
+                    for (let p of line)
+                    {
+                        let t = this.tilemap.getTileAt(p.x, p.y);
+                        if (t != null)
+                            t.setAlpha(0);
+                    }
+                   /* do {
+                        var p = line.next().value;
+
+                        if (p != undefined)
+                        {
+                            this.tilemap.getTileAt(p.x, p.y).setAlpha(0);
+                        }
+                    } while(p);*/
+                });
+
+                this.tilemap.setLayer("blackness");
+                this.tilemap.getTilesWithinShape(u.ambient).forEach(t=>
+                {
+                    t.setAlpha(0.0);
+                });
+                this.tilemap.getTilesWithinShape(u.horizon).forEach(t=>
+                {
+                    t.setAlpha(0.0);
                 });
             }
 
           
         }
 
-        let hide = this.fow.createGeometryMask();
-        hide.invertAlpha = true;
-        let show =  this.fow.createGeometryMask();
-        //this.grayness.setMask(hide);
-
+        this.tilemap.setLayer("fogofwar");
         for (let u of this.units)
         {
-            if (u.player != this.currentPlayer)
-            {
-           //     u.setMask(show);
-            }
-        }
+            let t = this.tilemap.getTileAt(u.tileX, u.tileY);
 
-       /* this.tilemap.forEachTile((t)=>
-        {
-            t.setAlpha(0.5);
-        });*/
+            u.visible = t != null ? t.visible : true;
+        }
 
         
 

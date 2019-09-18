@@ -13,6 +13,7 @@ export class Unit extends Phaser.GameObjects.Sprite
     player:number = 0;
     fov:Phaser.Geom.Triangle = new Phaser.Geom.Triangle();
     ambient:Phaser.Geom.Circle = new Phaser.Geom.Circle();
+    horizon:Phaser.Geom.Line = new Phaser.Geom.Line();
     
     moveRadius = 4 * 16;
     shootRadius = 10 * 16;
@@ -36,7 +37,10 @@ export class Unit extends Phaser.GameObjects.Sprite
         this.rotation = rotation;
         this.ambient.setTo(this.x, this.y, 16)
         this.fov = this.calculateFov(new Vector2(this.x, this.y), this.rotation, this.focusDistance);
+        this.horizon.setTo(this.fov.x2, this.fov.y2, this.fov.x3, this.fov.y3);
     }
+
+
 
     calculateFov(from:Vector2, angle:number, distance:number)
     {
