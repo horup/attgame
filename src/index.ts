@@ -1,80 +1,10 @@
 import * as Phaser from 'phaser';
 import Vector2 = Phaser.Math.Vector2;
+import {Unit, Order} from './unit';
+import {CELLSIZE, TILESIZE} from './constants';
 
 declare var require;
 
-export interface Order
-{
-    moveTo:{x:number, y:number};
-    facing:number;
-    distance:number;
-}
-
-export class Unit extends Phaser.GameObjects.Sprite
-{
-    player:number = 0;
-    fov:Phaser.Geom.Triangle = new Phaser.Geom.Triangle();
-    ambient:Phaser.Geom.Circle = new Phaser.Geom.Circle();
-    
-    moveRadius = 4 * 16;
-    shootRadius = 10 * 16;
-
-    order:Order;
-
-    focusDistance:number = 0;
-
-
-    moveTo(x:number, y:number, rotation:number, focusDistance:number)
-    {
-        this.x = x;
-        this.y = y;
-        this.focusDistance = focusDistance;
-        this.rotation = rotation;
-        this.ambient.setTo(x, y, 16);
-        this.fov = this.calculateFov(new Vector2(x, y), this.rotation, this.focusDistance);
-    }
-
-    calculateFov(from:Vector2, angle:number, distance:number)
-    {
-        let minDistance = 128;
-        if (distance < minDistance)
-            distance = minDistance;
-        let l = distance;
-        let l2 = 300 - l;
-        let min = 0;
-        if (l2 < min)
-            l2 = min;
-        let p = from.clone();
-        let v = new Vector2(Math.cos(angle), Math.sin(angle));
-        let to = v.clone().scale(distance).add(from);
-
-        let p1 = v.clone().set(-v.y, v.x).scale(l2).add(to);
-        let p2 = v.clone().set(v.y, -v.x).scale(l2).add(to);
-        let tri = new Phaser.Geom.Triangle(p.x, p.y, p1.x, p1.y, p2.x, p2.y);
-        return tri;
-    }
-
-    lookAt(p:Vector2)
-    {
-        let front = new Phaser.Geom.Triangle();
-        let me = new Vector2(this);
-        let v = p.clone().subtract(me);
-        this.rotation = v.angle();
-        let l = v.length();
-        let l2 = 300-l;
-        let min = 0;
-        if (l2 < min)
-            l2 = min;
-        v.normalize();
-
-
-        let p1 = v.clone().set(-v.y, v.x).scale(l2).add(p);
-        let p2 = v.clone().set(v.y, -v.x).scale(l2).add(p);
-
-
-        this.fov.setTo(me.x, me.y, p1.x, p1.y, p2.x, p2.y);
-    }
-}
 
 export class AttScene extends Phaser.Scene
 {
@@ -112,7 +42,7 @@ export class AttScene extends Phaser.Scene
         u.setInteractive();
         this.units.push(u);
 
-        u.moveTo(x, y, 0, 100);
+        u.moveToTile(x, y, 0, 100);
 
         return u;
     }
@@ -132,7 +62,7 @@ export class AttScene extends Phaser.Scene
         {
             if (u.order != null)
             {
-                u.moveTo(u.order.moveTo.x, u.order.moveTo.y, u.order.facing, u.order.distance);
+                u.moveToTile(u.order.moveTo.x / TILESIZE, u.order.moveTo.y / TILESIZE, u.order.facing, u.order.distance);
                 u.order = null;
             }
         }
@@ -174,12 +104,12 @@ export class AttScene extends Phaser.Scene
                 this.tilemap.putTileAt(11 + Phaser.Math.RND.integer() % 2, x, y);
 
         {
-            let u = this.makeUnit(100, 100);
+            let u = this.makeUnit(6, 6);
             u.on('pointerdown', (e:PointerEvent)=>e.button == 0 ? this.selectUnit(u) : undefined);
         }
 
         {
-            let u = this.makeUnit(100, 400, 1);
+            let u = this.makeUnit(12, 32-6, 1);
             u.on('pointerdown', (e:PointerEvent)=>e.button == 0 ? this.selectUnit(u) : undefined);
         }
 
@@ -258,7 +188,7 @@ export class AttScene extends Phaser.Scene
         {
             if (u.player != this.currentPlayer)
             {
-                u.setMask(show);
+           //     u.setMask(show);
             }
         }
 
